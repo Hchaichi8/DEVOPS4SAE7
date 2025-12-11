@@ -1,0 +1,74 @@
+# ConfigMap pour l'URL de la DB
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spring-config
+  namespace: devops
+data:
+  SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-service:3306/springdb"
+
+---
+# Secret pour username/password (base64)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: spring-secret
+  namespace: devops
+type: Opaque
+data:
+  SPRING_DATASOURCE_USERNAME: cm9vdA==        # root
+  SPRING_DATASOURCE_PASSWORD: cGFzc3dvcmQxMjM= # password123
+
+---
+# Deployment Spring Boot
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-app
+  namespace: devops
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: spring-app
+  template:
+    metadata:
+      labels:
+        app: spring-app
+    spec:
+      # InitContainer pour attendre que MySQL soit prêt
+      initContainers:
+        - name: wait-for-mysql
+          image: busybox
+          command:
+            - sh
+            - -c
+            - >
+              until nc -z mysql-service 3306;
+              do echo waiting for mysql; sleep 2; done;
+      containers:
+        - name: spring-app
+          image: ghassenhchaichi/student-management:latest
+          ports:
+            - containerPort: 8889
+          envFrom:
+            - configMapRef:
+                name: spring-config
+            - secretRef:
+                name: spring-secret
+
+---
+# Service NodePort pour exposer l'application
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-service
+  namespace: devops
+spec:
+  selector:
+    app: spring-app
+  type: NodePort
+  ports:
+    - port: 8889
+      targetPort: 8889
+      nodePort: 30089
