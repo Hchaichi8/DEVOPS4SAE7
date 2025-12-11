@@ -17,7 +17,8 @@ metadata:
 type: Opaque
 data:
   SPRING_DATASOURCE_USERNAME: cm9vdA==        # root
-  SPRING_DATASOURCE_PASSWORD: cGFzc3dvcmQxMjM= # password123
+  SPRING_DATASOURCE_PASSWORD: Z2hhc3Nlbg==
+
 
 ---
 # Deployment Spring Boot
